@@ -6,6 +6,6 @@
 
 const script = document.createElement('script')
 script.setAttribute('type', 'module')
-script.innerHTML = 'Сюда инлайном скрипт из тестового хтмл'; 
+script.innerHTML = 'Paste configured inline script from test.html here';
 document.head.appendChild(script)
 

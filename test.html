@@ -110,19 +110,20 @@
 </body>
 
 <script type="module">
-  import {initializeApp} from "https://www.gstatic.com/firebasejs/9.6.7/firebase-app.js";
-  import {getAnalytics} from "https://www.gstatic.com/firebasejs/9.6.7/firebase-analytics.js";
-  import {getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword} from "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth.js";
+  import {initializeApp} from "https://www.gstatic.com/firebasejs/9.6.7/firebase-app.js"
+  import {getAnalytics} from "https://www.gstatic.com/firebasejs/9.6.7/firebase-analytics.js"
+  import {getDatabase, ref, update} from "https://www.gstatic.com/firebasejs/9.6.7/firebase-database.js"
+  import {getAuth, signInWithEmailAndPassword} from "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth.js"
 
   // translator config
   const config = {
     key: "?",                                                                 // key name
     additionalKey: "shiftKey",                                                // shiftKey | altKey | ctrlKey
-    fbEmail: "xxxxxxxxxxx@xxxxx.x",                                           // translator service email
-    fbPassword: "xxxxxxxxxxxx",                                               // translator service password
+    fbEmail: "xxxxxxxxxxxxxxxxxxx",                                           // translator service email
+    fbPassword: "xxxxxxxx",                                                   // translator service password
     NLPKey: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",             // NLP api key (https://rapidapi.com/gofitech/api/nlp-translation/)
     from: "en",                                                               // from language
-    to: "ru",                                                                 // to language
+    to: "ja",                                                                 // to language
     tooltipsId: "qsaPer12dcksx9zd9",                                          // tooltips tag id
   }
 
@@ -132,6 +133,7 @@
   const app = initializeApp(firebaseConfig);
   const analytics = getAnalytics(app);
   const auth = getAuth();
+  const db = getDatabase(app);
   let uid = null;
   let hasTranslatedLabels = false;  // flag
 
@@ -139,10 +141,22 @@
     .then((userCredential) => {
       uid = userCredential.user.uid;
     })
-    .catch((error) => {
-      const errorCode = error.code;
-      const errorMessage = error.message;
-    });
+    .catch(console.error);
+
+  const addToDictionary = async ($tooltip, original, translated) => {
+    if (uid) {
+      try {
+        update(ref(db, `users/${uid}`), {
+          [original]: translated
+        });
+        $tooltip.innerHTML = "Success"
+      } catch (e) {
+        $tooltip.innerHTML = e.message
+      }
+    } else {
+      $tooltip.innerHTML = "You are not autorized"
+    }
+  };
 
   // config defined key down handler
   document.onkeydown = e => {
@@ -167,12 +181,12 @@
       .then(response => response.json()).then(result => {
         const range = selected.getRangeAt(0);
         const rect = range.getBoundingClientRect();
-        console.log(rect)
         const tooltip = document.createElement("span");
         hasTranslatedLabels = true;
         tooltip.id = config.tooltipsId;
+        tooltip.onclick = () => addToDictionary(tooltip, selectedText, result.translated_text[config.to])
         tooltip.innerHTML = `<svg style="height: 18px; width: 18px; fill: #9fa0a3; cursor: pointer" xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-square-plus" width="44" height="44" viewBox="0 0 24 24" stroke-width="1.5" stroke="#2c3e50" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><rect x="4" y="4" width="16" height="16" rx="2" /><line x1="9" y1="12" x2="15" y2="12" /><line x1="12" y1="9" x2="12" y2="15" /></svg>${result.translated_text[config.to]}`;
-        tooltip.style = `top: ${rect.y + (rect.bottom - rect.y) + window.pageYOffset}px; left: ${rect.x + window.pageXOffset - 30}px; position: absolute; background-color: #282c34; color: #9fa0a3; padding: 5px; font-weight: 500; display: flex; gap: 5px; align-items: center; font-family: Arial;`
+        tooltip.style = `top: ${rect.y + (rect.bottom - rect.y) + window.pageYOffset}px; left: ${rect.x + window.pageXOffset - 30}px; position: absolute; background-color: #282c34; color: #9fa0a3; padding: 5px; font-weight: 500; display: flex; gap: 5px; align-items: center; font-family: Arial; cursor: pointer;`
         document.body.append(tooltip)
       })
       .catch(err => {
